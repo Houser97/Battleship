@@ -7,4 +7,27 @@
 
 body {
     background-color: #E3F2FD;
+    height: 100vh;
+}
+
+.gameboard {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.grid {
+    display: grid;
+    min-height: 400px;
+    min-width: 400px;
+    border: 2px solid black;
+    grid-template-rows: repeat(10, 1fr);
+    grid-template-columns: repeat(10, 1fr);
+    margin: 50px;
+}
+
+.grid .grid-unit{
+    border: 1px solid rgb(0, 0, 0);
 }
