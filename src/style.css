@@ -1,3 +1,8 @@
+:root {
+    --thickness-boarders: 2px;
+    --color-boarders: rgb(46, 46, 183);
+}
+
 * {
     padding: 0;
     margin: 0;
@@ -10,6 +15,18 @@ body {
     height: 100vh;
 }
 
+header {
+    width: 100%;
+    background-color: rgb(29, 25, 25);
+    color: white;
+    font-size: 10vh;
+    min-height: 12vh;
+    max-height: 12vh;
+    font-weight: 600;
+    display: flex;
+    justify-content: center; align-items: center;
+}
+
 .gameboard {
     height: 100%;
     width: 100%;
@@ -18,16 +35,39 @@ body {
     align-items: center;
 }
 
+/*-------------------------------------------------------GRID*/
+/*-----------------------------------------------------------*/
+
 .grid {
     display: grid;
-    min-height: 400px;
-    min-width: 400px;
-    border: 2px solid black;
-    grid-template-rows: repeat(10, 1fr);
-    grid-template-columns: repeat(10, 1fr);
-    margin: 50px;
+    min-height: 450px;
+    min-width: 450px;
+    grid-template-rows: repeat(11, 1fr);
+    grid-template-columns: repeat(11, 1fr);
+    margin: 10%;
 }
 
 .grid .grid-unit{
-    border: 1px solid rgb(0, 0, 0);
+    display: flex;
+    justify-content: center; align-items: center;
+}
+
+.grid .grid-playable {
+    border: 1px solid var(--color-boarders);
+}
+
+.grid .border-top {
+    border-top: var(--thickness-boarders) solid var(--color-boarders);
+}
+
+.grid .border-left {
+    border-left: var(--thickness-boarders) solid var(--color-boarders);
+}
+
+.grid .border-right {
+    border-right: var(--thickness-boarders) solid var(--color-boarders);
+}
+
+.grid .border-bottom {
+    border-bottom: var(--thickness-boarders) solid var(--color-boarders);
 }
