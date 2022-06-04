@@ -10,6 +10,17 @@
     "parserOptions": {
         "ecmaVersion": "latest"
     },
+    "overrides": [
+        {
+            "files": [
+                "**/*.test.js",
+                "**/*.test.jsx"
+            ],
+            "env": {
+                "jest": true
+            }
+        }
+    ],
     "rules": {
         "no-console": "off",
         "quotes": [
