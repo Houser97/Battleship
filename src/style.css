@@ -75,3 +75,7 @@ header {
     grid-template-rows: repeat(10,1fr);
     align-items: center; text-align: center;
 }
+
+.ship {
+    background-color: rgba(35, 35, 245, 0.55);
+}

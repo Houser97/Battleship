@@ -6,7 +6,7 @@ describe("Scope for ship 1", () => {
     expect(ship1.hit(4)).toBe("hit grid4");
   });
 
-  test("check that coordenate was already hit", () => {
+  test("check that coordinate has already been hit", () => {
     expect(ship1.hit(4)).toBe("grid4 already hit");
   });
 
@@ -31,19 +31,19 @@ describe("Scope for ship 2", () => {
 
 describe("Scope for player 1 gameboard", () => {
   test("ship array must have length of 10", () => {
-    index.gameboardPlayer1.generateShipLocations();
+    index.gameboardPlayer1.generateShips();
     expect(index.gameboardPlayer1.ships.length).toBe(10);
   });
   test("First ship array's element must have length of 3", () => {
-    index.gameboardPlayer1.generateShipLocations();
+    index.gameboardPlayer1.generateShips();
     expect(index.gameboardPlayer1.ships[0].coordinates.length).toBe(3);
   });
   test("Middle ship array's element must have length of 2", () => {
-    index.gameboardPlayer1.generateShipLocations();
+    index.gameboardPlayer1.generateShips();
     expect(index.gameboardPlayer1.ships[4].coordinates.length).toBe(2);
   });
   test("Middle ship array's element must have length of 1", () => {
-    index.gameboardPlayer1.generateShipLocations();
+    index.gameboardPlayer1.generateShips();
     expect(index.gameboardPlayer1.ships[9].coordinates.length).toBe(1);
   });
 });

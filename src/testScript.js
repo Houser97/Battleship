@@ -24,7 +24,7 @@ const gameboardPlayer1 = (() => {
   const numberOfShips = 10;
   const ships = [];
 
-  function generateShip(lengthShip) {
+  function generateShipLocations(lengthShip) {
     const direction = Math.floor(Math.random() * 2);
     let col;
     let row;
@@ -48,7 +48,7 @@ const gameboardPlayer1 = (() => {
   }
 
   function collision(locations, currentNumberOfShips) {
-    for (let i = 0; i < currentNumberOfShips + 1; i += 1) {
+    for (let i = 0; i <= currentNumberOfShips; i += 1) {
       const ship = ships[i];
       for (let j = 0; j < locations.length; j += 1) {
         if (ship.coordinates.indexOf(locations[j]) >= 0) {
@@ -59,24 +59,23 @@ const gameboardPlayer1 = (() => {
     return false;
   }
 
-  const generateShipLocations = () => {
+  const generateShips = () => {
     let locations;
     for (let i = 0; i < numberOfShips; i += 1) {
       let lengthShip;
       if (i < 3) lengthShip = 3;
       if (i >= 3 && i < 7) lengthShip = 2;
       if (i >= 7 && i <= 9) lengthShip = 1;
-      // eslint-disable-next-line prefer-const
-      let ship = shipFactory([], lengthShip);
+      const ship = shipFactory([], lengthShip);
       ships.push(ship);
       do {
-        locations = generateShip(lengthShip);
+        locations = generateShipLocations(lengthShip);
       } while (collision(locations, i));
       ships[i].coordinates = locations;
     }
   };
 
-  return { generateShipLocations, ships };
+  return { generateShips, ships };
 })();
 
 module.exports = { shipFactory, gameboardPlayer1 };
