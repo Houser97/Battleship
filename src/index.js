@@ -104,34 +104,29 @@ const gameboardFactory = () => {
     }
   };
 
-  const styleGridPlayer1 = () => {
-    for (let i = 0; i < numberOfShips; i += 1) {
-      const currentCoordinates = ships[i].coordinates;
-      console.log(currentCoordinates);
-      const currentGrids = [];
-      currentCoordinates.forEach((grid) => {
-        const className = document.querySelector(`.player1 .grid${grid}`);
-        className.classList.add("ship");
-        currentGrids.push(className);
-      });
+  const receiveAttack = (e) => {
+    if (e.target.getAttribute("data-ship-number") === null && !(e.target.className.includes("empty"))) {
+      e.target.classList.add("empty");
+      console.log("Houmser");
     }
   };
 
-  const styleGridPlayer2 = () => {
+  const styleGrid = (player) => {
     for (let i = 0; i < numberOfShips; i += 1) {
       const currentCoordinates = ships[i].coordinates;
-      console.log(currentCoordinates);
+      /* console.log(currentCoordinates); */
       const currentGrids = [];
       currentCoordinates.forEach((grid) => {
-        const className = document.querySelector(`.player2 .grid${grid}`);
+        const className = document.querySelector(`.${player} .grid${grid}`);
         className.classList.add("ship");
+        className.dataset.shipNumber = `${i}`;
         currentGrids.push(className);
       });
     }
   };
 
   return {
-    generateShips, ships, styleGridPlayer1, styleGridPlayer2,
+    generateShips, ships, styleGrid, receiveAttack,
   };
 };
 
@@ -139,7 +134,18 @@ const gameboardPlayer1 = gameboardFactory();
 const gameboardPlayer2 = gameboardFactory();
 
 gameboardPlayer1.generateShips();
-gameboardPlayer1.styleGridPlayer1();
+gameboardPlayer1.styleGrid("player1");
 
 gameboardPlayer2.generateShips();
-gameboardPlayer2.styleGridPlayer2();
+gameboardPlayer2.styleGrid("player2");
+
+const playerFactory = () => {
+  const attack = (playerAttacked) => {
+    const gameboardOpponent = document.querySelector(".grid-player.player2");
+    gameboardOpponent.addEventListener("click", (e) => { gameboardPlayer2.receiveAttack(e); });
+  };
+  return { attack };
+};
+
+const player1 = playerFactory();
+player1.attack("player2");

@@ -19,7 +19,7 @@ const shipFactory = (coordinates, length) => {
   return { hit, isSunk, coordinates };
 };
 
-const gameboardPlayer1 = (() => {
+const gameboardFactory = () => {
   const boardsize = 10;
   const numberOfShips = 10;
   const ships = [];
@@ -74,8 +74,39 @@ const gameboardPlayer1 = (() => {
       ships[i].coordinates = locations;
     }
   };
+  const styleGridPlayer1 = () => {
+    for (let i = 0; i < numberOfShips; i += 1) {
+      const currentCoordinates = ships[i].coordinates;
+      console.log(currentCoordinates);
+      const currentGrids = [];
+      currentCoordinates.forEach((grid) => {
+        const className = document.querySelector(`.player1 .grid${grid}`);
+        className.classList.add("ship");
+        className.dataset.shipNumber = `${i}`;
+        currentGrids.push(className);
+      });
+    }
+  };
 
-  return { generateShips, ships };
-})();
+  const styleGridPlayer2 = () => {
+    for (let i = 0; i < numberOfShips; i += 1) {
+      const currentCoordinates = ships[i].coordinates;
+      console.log(currentCoordinates);
+      const currentGrids = [];
+      currentCoordinates.forEach((grid) => {
+        const className = document.querySelector(`.player2 .grid${grid}`);
+        className.classList.add("ship");
+        className.dataset.shipNumber = `${i}`;
+        currentGrids.push(className);
+      });
+    }
+  };
+
+  return {
+    generateShips, ships, styleGridPlayer1, styleGridPlayer2,
+  };
+};
+
+const gameboardPlayer1 = gameboardFactory();
 
 module.exports = { shipFactory, gameboardPlayer1 };

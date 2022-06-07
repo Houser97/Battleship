@@ -79,3 +79,7 @@ header {
 .ship {
     background-color: rgba(35, 35, 245, 0.55);
 }
+
+.empty{
+    background-color: rgb(223, 65, 65);
+}
