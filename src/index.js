@@ -11,31 +11,32 @@ const DOM = ((doc) => {
   return { player1Plays };
 })(document);
 
-const shipFactory = (coordinates, length) => {
-  let currentHealth = length;
-  const hitArray = [];
-  const hit = (coordinate) => {
-    if (hitArray.includes(coordinate)) {
-      return `grid${coordinate} already hit`;
+const shipFactory = (coordinates, lengthShip) => {
+  const currentHealth = lengthShip;
+  const hit = (shipCoordinates, coordinate, health) => {
+    let shipsHealth = health;
+    if (shipCoordinates.includes(coordinate)) {
+      shipsHealth -= 1;
+      return shipsHealth;
     }
-    if (coordinates.includes(coordinate)) {
-      currentHealth -= 1;
-      hitArray.push(coordinate);
-      return `hit grid${coordinate}`;
-    }
-    return "no hit";
+    return shipsHealth;
   };
-  const isSunk = () => {
-    if (currentHealth === 0) return "sunk";
+  const isSunk = (health) => {
+    if (health === 0) return "sunk";
     return "no sunk";
   };
-  return { hit, isSunk, coordinates };
+  return {
+    hit,
+    isSunk,
+    currentHealth,
+    coordinates,
+  };
 };
+
 const view = ((doc) => {
   const showShips = (player, numberOfShips, ships) => {
     for (let i = 0; i < numberOfShips; i += 1) {
       const currentCoordinates = ships[i].coordinates;
-      /* console.log(currentCoordinates); */
       const currentGrids = [];
       currentCoordinates.forEach((grid) => {
         const className = doc.querySelector(`.${player} .grid${grid}`);
@@ -60,11 +61,25 @@ const view = ((doc) => {
   };
   return { showShips, displayMiss, displayHit };
 })(document);
+
 const gameboardFactory = () => {
   const boardsize = 10;
   const numberOfShips = 10;
-  /* const spaceLocations = []; */
   const ships = [];
+
+  function extractGridNumber(grid) {
+    if (grid.classList[0].length === 5) {
+      return grid.classList[0].substr(-1);
+    }
+    return grid.classList[0].substr(-2);
+  }
+
+  function getShipAttacked(grid) {
+    if (grid.getAttribute("data-ship-number") !== null) {
+      return parseInt(grid.getAttribute("data-ship-number"), 10);
+    }
+    return "no ship has been attacked";
+  }
 
   function generateShipLocations(lengthShip) {
     const direction = Math.floor(Math.random() * 2);
@@ -89,24 +104,6 @@ const gameboardFactory = () => {
     return newShipLocations;
   }
 
-  /* function spaceBetweenShips(locations, direction) {
-    const invalidValuesUpLeft = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90,
-      1, 2, 3, 4, 5, 6, 7, 8, 9];
-    const invalidValuesBelowRight = [9, 19, 29, 39, 49, 59, 69, 79, 89, 90, 91,
-      92, 93, 94, 95, 96, 97, 98, 99];
-    if (locations.length === 1) {
-      const centralValue = locations[0];
-      const spaceAbove = centralValue - 10;
-      const spaceBelow = centralValue + 10;
-      const spaceRight = centralValue + 1;
-      const spaceLeft = centralValue - 1;
-
-      return [spaceAbove, spaceBelow];
-    }
-
-    return [];
-  } */
-
   function collision(locations, currentNumberOfShips) {
     for (let i = 0; i <= currentNumberOfShips; i += 1) {
       const ship = ships[i];
@@ -115,20 +112,12 @@ const gameboardFactory = () => {
           return true;
         }
       }
-      /* for (let k = 0; k < spaceLocations.length; k += 1) {
-        if (ship.coordinates.includes(spaceLocations[k])) {
-          return true;
-        }
-      } */
     }
-    /* const extraInvalidLocations = spaceBetweenShips(locations, direction);
-    extraInvalidLocations.forEach((spaceLocation) => spaceLocations.push(spaceLocation)); */
     return false;
   }
 
   const generateShips = () => {
     let locations;
-    let direction;
     for (let i = 0; i < numberOfShips; i += 1) {
       let lengthShip;
       if (i < 3) lengthShip = 3;
@@ -138,19 +127,31 @@ const gameboardFactory = () => {
       ships.push(ship);
       do {
         locations = generateShipLocations(lengthShip);
-      } while (collision(locations, i, direction));
+      } while (collision(locations, i));
       ships[i].coordinates = locations;
     }
   };
 
   const receiveAttack = (e, currentPlayer, nextPlayer) => {
+    let attackedCoordinates;
+    let shipAttacked = "no ship has been attacked";
     if (typeof e === "object") {
+      attackedCoordinates = extractGridNumber(e.target);
+      shipAttacked = getShipAttacked(e.target);
       // eslint-disable-next-line no-use-before-define
-      gameFlow.setNextTurn(e.target, currentPlayer, nextPlayer);
+      gameFlow.setNextTurn(e.target, currentPlayer, nextPlayer, attackedCoordinates, shipAttacked);
     } else {
       const machineSelectedGrid = document.querySelector(`.player1 .grid${e}`);
+      attackedCoordinates = extractGridNumber(machineSelectedGrid);
+      shipAttacked = getShipAttacked(machineSelectedGrid);
       // eslint-disable-next-line no-use-before-define
-      gameFlow.setNextTurn(machineSelectedGrid, currentPlayer, nextPlayer);
+      gameFlow.setNextTurn(
+        machineSelectedGrid,
+        currentPlayer,
+        nextPlayer,
+        attackedCoordinates,
+        shipAttacked,
+      );
     }
   };
   return {
@@ -176,10 +177,9 @@ const playerFactory = () => {
   return { attack };
 };
 
-// eslint-disable-next-line no-unused-vars
 const gameFlow = (() => {
-  // eslint-disable-next-line prefer-const
   let currentTurn = "player1";
+  let shipHit = 0;
   const gameboardPlayer1 = gameboardFactory();
   const gameboardPlayer2 = gameboardFactory();
 
@@ -193,16 +193,49 @@ const gameFlow = (() => {
   const player2 = playerFactory();
   player1.attack("player2", gameboardPlayer2);
 
-  const setNextTurn = (grid, currentPlayer, nextPlayer) => {
+  const setNextTurn = (grid, currentPlayer, nextPlayer, attackedCoordinates, shipAttacked) => {
     if (grid.className.includes("empty") || grid.className.includes("hit")) {
-      // eslint-disable-next-line no-use-before-define
       currentTurn = currentPlayer;
     } else if (!(grid.className.includes("empty")) && !(grid.className.includes("hit"))) {
       // eslint-disable-next-line no-use-before-define
       view.displayMiss(grid);
       // eslint-disable-next-line no-use-before-define
       view.displayHit(grid);
+      /* Llamar a hit e isSunk del respectivo barco */
       if (grid.className.includes("hit")) {
+        if (currentTurn === "player1") {
+          shipHit = gameboardPlayer2.ships[shipAttacked];
+          const attackCoordinates = parseInt(attackedCoordinates, 10);
+
+          shipHit.currentHealth = shipHit.hit(
+            shipHit.coordinates,
+            attackCoordinates,
+            shipHit.currentHealth,
+          );
+
+          if (shipHit.isSunk(shipHit.currentHealth) === "sunk") {
+            shipHit.coordinates.forEach((shipSunk) => {
+              const gridAttacked = document.querySelector(`.player2 .grid${shipSunk}`);
+              gridAttacked.classList.add("sunk");
+            });
+          }
+        } else if (currentTurn === "player2") {
+          shipHit = gameboardPlayer1.ships[shipAttacked];
+          const attackCoordinates = parseInt(attackedCoordinates, 10);
+
+          shipHit.currentHealth = shipHit.hit(
+            shipHit.coordinates,
+            attackCoordinates,
+            shipHit.currentHealth,
+          );
+
+          if (shipHit.isSunk(shipHit.currentHealth) === "sunk") {
+            shipHit.coordinates.forEach((shipSunk) => {
+              const gridAttacked = document.querySelector(`.player1 .grid${shipSunk}`);
+              gridAttacked.classList.add("sunk");
+            });
+          }
+        }
         currentTurn = currentPlayer;
       } else { currentTurn = nextPlayer; }
     }

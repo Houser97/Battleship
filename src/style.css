@@ -87,3 +87,7 @@ header {
 .hit{
     background-color: rgb(70, 223, 65);
 }
+
+.sunk {
+    background-color: black;
+}
