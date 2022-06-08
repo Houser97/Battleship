@@ -1,10 +1,13 @@
 import "./style.css";
 
-let currentTurn = "player1";
-
 const DOM = ((doc) => {
   const gameboard2 = doc.querySelector(".grid-player.player2");
-  const player1Plays = (gameboardPlayer2) => gameboard2.addEventListener("click", (e) => gameboardPlayer2.receiveAttack(e, "player1", "player2"));
+  const player1Plays = (gameboardPlayer2) => gameboard2.addEventListener("click", (e) => {
+    // eslint-disable-next-line no-use-before-define
+    if (gameFlow.currentTurn === "player1") {
+      gameboardPlayer2.receiveAttack(e, "player1", "player2");
+    }
+  });
   return { player1Plays };
 })(document);
 
@@ -28,21 +31,40 @@ const shipFactory = (coordinates, length) => {
   };
   return { hit, isSunk, coordinates };
 };
+const view = ((doc) => {
+  const showShips = (player, numberOfShips, ships) => {
+    for (let i = 0; i < numberOfShips; i += 1) {
+      const currentCoordinates = ships[i].coordinates;
+      /* console.log(currentCoordinates); */
+      const currentGrids = [];
+      currentCoordinates.forEach((grid) => {
+        const className = doc.querySelector(`.${player} .grid${grid}`);
+        className.classList.add("ship");
+        className.dataset.shipNumber = `${i}`;
+        currentGrids.push(className);
+      });
+    }
+  };
 
+  const displayMiss = (grid) => {
+    if (grid.getAttribute("data-ship-number") === null && !(grid.className.includes("empty"))
+    && !(grid.className.includes("hit"))) {
+      grid.classList.add("empty");
+    }
+  };
+
+  const displayHit = (grid) => {
+    if (!(grid.getAttribute("data-ship-number") === null) && !(grid.className.includes("hit"))) {
+      grid.classList.add("hit");
+    }
+  };
+  return { showShips, displayMiss, displayHit };
+})(document);
 const gameboardFactory = () => {
   const boardsize = 10;
   const numberOfShips = 10;
   /* const spaceLocations = []; */
   const ships = [];
-
-  function checkIfRepeatTurn(grid, currentPlayer, nextPlayer) {
-    if (grid.getAttribute("data-ship-number") === null && grid.className.includes("empty")) {
-      currentTurn = currentPlayer;
-    } if (!(grid.getAttribute("data-ship-number") === null) && grid.className.includes("hit")) {
-      currentTurn = currentPlayer;
-    }
-    currentTurn = nextPlayer;
-  }
 
   function generateShipLocations(lengthShip) {
     const direction = Math.floor(Math.random() * 2);
@@ -124,52 +146,17 @@ const gameboardFactory = () => {
   const receiveAttack = (e, currentPlayer, nextPlayer) => {
     if (typeof e === "object") {
       // eslint-disable-next-line no-use-before-define
-      view.displayMiss(e.target);
+      gameFlow.setNextTurn(e.target, currentPlayer, nextPlayer);
+    } else {
+      const machineSelectedGrid = document.querySelector(`.player1 .grid${e}`);
       // eslint-disable-next-line no-use-before-define
-      view.displayHit(e.target);
-      return checkIfRepeatTurn(e.target, currentPlayer, nextPlayer);
+      gameFlow.setNextTurn(machineSelectedGrid, currentPlayer, nextPlayer);
     }
-    const machineSelectedGrid = document.querySelector(`.player1 .grid${e}`);
-    // eslint-disable-next-line no-use-before-define
-    view.displayHit(machineSelectedGrid);
-    // eslint-disable-next-line no-use-before-define
-    view.displayMiss(machineSelectedGrid);
-    return checkIfRepeatTurn(machineSelectedGrid, currentPlayer, nextPlayer);
   };
   return {
     generateShips, ships, receiveAttack,
   };
 };
-
-const view = ((doc) => {
-  const showShips = (player, numberOfShips, ships) => {
-    for (let i = 0; i < numberOfShips; i += 1) {
-      const currentCoordinates = ships[i].coordinates;
-      /* console.log(currentCoordinates); */
-      const currentGrids = [];
-      currentCoordinates.forEach((grid) => {
-        const className = doc.querySelector(`.${player} .grid${grid}`);
-        className.classList.add("ship");
-        className.dataset.shipNumber = `${i}`;
-        currentGrids.push(className);
-      });
-    }
-  };
-
-  const displayMiss = (grid) => {
-    if (grid.getAttribute("data-ship-number") === null && !(grid.className.includes("empty"))
-    && !(grid.className.includes("hit"))) {
-      grid.classList.add("empty");
-    }
-  };
-
-  const displayHit = (grid) => {
-    if (!(grid.getAttribute("data-ship-number") === null) && !(grid.className.includes("hit"))) {
-      grid.classList.add("hit");
-    }
-  };
-  return { showShips, displayMiss, displayHit };
-})(document);
 
 const playerFactory = () => {
   function computerChoice() {
@@ -181,7 +168,7 @@ const playerFactory = () => {
 
   const attack = (playerAttacked, gameboardPlayer2) => {
     if (playerAttacked === "player2") {
-      return DOM.player1Plays(gameboardPlayer2);
+      DOM.player1Plays(gameboardPlayer2);
     }
     return parseInt(computerChoice(), 10);
     /* gameboardPlayer1.receiveAttack(computerAttacked); */
@@ -191,6 +178,8 @@ const playerFactory = () => {
 
 // eslint-disable-next-line no-unused-vars
 const gameFlow = (() => {
+  // eslint-disable-next-line prefer-const
+  let currentTurn = "player1";
   const gameboardPlayer1 = gameboardFactory();
   const gameboardPlayer2 = gameboardFactory();
 
@@ -202,6 +191,22 @@ const gameFlow = (() => {
 
   const player1 = playerFactory();
   const player2 = playerFactory();
+  player1.attack("player2", gameboardPlayer2);
+
+  const setNextTurn = (grid, currentPlayer, nextPlayer) => {
+    if (grid.className.includes("empty") || grid.className.includes("hit")) {
+      // eslint-disable-next-line no-use-before-define
+      currentTurn = currentPlayer;
+    } else if (!(grid.className.includes("empty")) && !(grid.className.includes("hit"))) {
+      // eslint-disable-next-line no-use-before-define
+      view.displayMiss(grid);
+      // eslint-disable-next-line no-use-before-define
+      view.displayHit(grid);
+      if (grid.className.includes("hit")) {
+        currentTurn = currentPlayer;
+      } else { currentTurn = nextPlayer; }
+    }
+  };
 
   let then = Date.now();
   let now;
@@ -209,11 +214,7 @@ const gameFlow = (() => {
   function gameLoop() {
     now = Date.now();
     const difference = now - then;
-    if (difference > 1000) {
-      console.log(currentTurn);
-      if (currentTurn === "player1") {
-        player1.attack("player2", gameboardPlayer2);
-      }
+    if (difference > 1000 / 60) {
       if (currentTurn === "player2") {
         const computerChoice = player2.attack("player1");
         gameboardPlayer1.receiveAttack(computerChoice, "player2", "player1");
@@ -225,5 +226,5 @@ const gameFlow = (() => {
 
   gameLoop();
 
-  return { };
+  return { currentTurn, setNextTurn };
 })();
