@@ -83,3 +83,7 @@ header {
 .empty{
     background-color: rgb(223, 65, 65);
 }
+
+.hit{
+    background-color: rgb(70, 223, 65);
+}

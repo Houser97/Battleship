@@ -1,5 +1,13 @@
 import "./style.css";
 
+let currentTurn = "player1";
+
+const DOM = ((doc) => {
+  const gameboard2 = doc.querySelector(".grid-player.player2");
+  const player1Plays = (gameboardPlayer2) => gameboard2.addEventListener("click", (e) => gameboardPlayer2.receiveAttack(e, "player1", "player2"));
+  return { player1Plays };
+})(document);
+
 const shipFactory = (coordinates, length) => {
   let currentHealth = length;
   const hitArray = [];
@@ -26,6 +34,15 @@ const gameboardFactory = () => {
   const numberOfShips = 10;
   /* const spaceLocations = []; */
   const ships = [];
+
+  function checkIfRepeatTurn(grid, currentPlayer, nextPlayer) {
+    if (grid.getAttribute("data-ship-number") === null && grid.className.includes("empty")) {
+      currentTurn = currentPlayer;
+    } if (!(grid.getAttribute("data-ship-number") === null) && grid.className.includes("hit")) {
+      currentTurn = currentPlayer;
+    }
+    currentTurn = nextPlayer;
+  }
 
   function generateShipLocations(lengthShip) {
     const direction = Math.floor(Math.random() * 2);
@@ -104,20 +121,34 @@ const gameboardFactory = () => {
     }
   };
 
-  const receiveAttack = (e) => {
-    if (e.target.getAttribute("data-ship-number") === null && !(e.target.className.includes("empty"))) {
-      e.target.classList.add("empty");
-      console.log("Houmser");
+  const receiveAttack = (e, currentPlayer, nextPlayer) => {
+    if (typeof e === "object") {
+      // eslint-disable-next-line no-use-before-define
+      view.displayMiss(e.target);
+      // eslint-disable-next-line no-use-before-define
+      view.displayHit(e.target);
+      return checkIfRepeatTurn(e.target, currentPlayer, nextPlayer);
     }
+    const machineSelectedGrid = document.querySelector(`.player1 .grid${e}`);
+    // eslint-disable-next-line no-use-before-define
+    view.displayHit(machineSelectedGrid);
+    // eslint-disable-next-line no-use-before-define
+    view.displayMiss(machineSelectedGrid);
+    return checkIfRepeatTurn(machineSelectedGrid, currentPlayer, nextPlayer);
   };
+  return {
+    generateShips, ships, receiveAttack,
+  };
+};
 
-  const styleGrid = (player) => {
+const view = ((doc) => {
+  const showShips = (player, numberOfShips, ships) => {
     for (let i = 0; i < numberOfShips; i += 1) {
       const currentCoordinates = ships[i].coordinates;
       /* console.log(currentCoordinates); */
       const currentGrids = [];
       currentCoordinates.forEach((grid) => {
-        const className = document.querySelector(`.${player} .grid${grid}`);
+        const className = doc.querySelector(`.${player} .grid${grid}`);
         className.classList.add("ship");
         className.dataset.shipNumber = `${i}`;
         currentGrids.push(className);
@@ -125,27 +156,74 @@ const gameboardFactory = () => {
     }
   };
 
-  return {
-    generateShips, ships, styleGrid, receiveAttack,
+  const displayMiss = (grid) => {
+    if (grid.getAttribute("data-ship-number") === null && !(grid.className.includes("empty"))
+    && !(grid.className.includes("hit"))) {
+      grid.classList.add("empty");
+    }
   };
-};
 
-const gameboardPlayer1 = gameboardFactory();
-const gameboardPlayer2 = gameboardFactory();
-
-gameboardPlayer1.generateShips();
-gameboardPlayer1.styleGrid("player1");
-
-gameboardPlayer2.generateShips();
-gameboardPlayer2.styleGrid("player2");
+  const displayHit = (grid) => {
+    if (!(grid.getAttribute("data-ship-number") === null) && !(grid.className.includes("hit"))) {
+      grid.classList.add("hit");
+    }
+  };
+  return { showShips, displayMiss, displayHit };
+})(document);
 
 const playerFactory = () => {
-  const attack = (playerAttacked) => {
-    const gameboardOpponent = document.querySelector(".grid-player.player2");
-    gameboardOpponent.addEventListener("click", (e) => { gameboardPlayer2.receiveAttack(e); });
+  function computerChoice() {
+    const boardsize = 10;
+    const row = Math.floor(Math.random() * boardsize);
+    const col = Math.floor(Math.random() * boardsize);
+    return `${row}${col}`;
+  }
+
+  const attack = (playerAttacked, gameboardPlayer2) => {
+    if (playerAttacked === "player2") {
+      return DOM.player1Plays(gameboardPlayer2);
+    }
+    return parseInt(computerChoice(), 10);
+    /* gameboardPlayer1.receiveAttack(computerAttacked); */
   };
   return { attack };
 };
 
-const player1 = playerFactory();
-player1.attack("player2");
+// eslint-disable-next-line no-unused-vars
+const gameFlow = (() => {
+  const gameboardPlayer1 = gameboardFactory();
+  const gameboardPlayer2 = gameboardFactory();
+
+  gameboardPlayer1.generateShips();
+  gameboardPlayer2.generateShips();
+
+  view.showShips("player1", 10, gameboardPlayer1.ships);
+  view.showShips("player2", 10, gameboardPlayer2.ships);
+
+  const player1 = playerFactory();
+  const player2 = playerFactory();
+
+  let then = Date.now();
+  let now;
+
+  function gameLoop() {
+    now = Date.now();
+    const difference = now - then;
+    if (difference > 1000) {
+      console.log(currentTurn);
+      if (currentTurn === "player1") {
+        player1.attack("player2", gameboardPlayer2);
+      }
+      if (currentTurn === "player2") {
+        const computerChoice = player2.attack("player1");
+        gameboardPlayer1.receiveAttack(computerChoice, "player2", "player1");
+      }
+      then = now;
+    }
+    window.requestAnimationFrame(gameLoop);
+  }
+
+  gameLoop();
+
+  return { };
+})();
