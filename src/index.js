@@ -1,6 +1,8 @@
 import "./style.css";
 
 const DOM = ((doc) => {
+  let reset = "no reset";
+  const gridsPlayer1 = doc.querySelectorAll(".player-1-grid");
   const gridsPlayer2 = doc.querySelectorAll(".player-2-grid");
   const player1Plays = (gameboardPlayer2) => gridsPlayer2.forEach((grid) => grid.addEventListener("click", (e) => {
     // eslint-disable-next-line no-use-before-define
@@ -23,7 +25,51 @@ const DOM = ((doc) => {
     }
     return winner;
   };
-  return { player1Plays, selectWinnerBoard, selectWinnerName };
+  const resetButton = () => {
+    const buttonDIv = doc.querySelector(".reset");
+    buttonDIv.addEventListener("click", () => { reset = "reset"; });
+  };
+  const cleanGrids = (player, classesPlayer1, classesPlayer2) => {
+    let i = 0;
+    if (player === "player1") {
+      gridsPlayer1.forEach((individualGrid) => {
+        // eslint-disable-next-line no-param-reassign
+        individualGrid.className = "";
+        individualGrid.removeAttribute("data-ship-number");
+        classesPlayer1.forEach((classToAdd) => {
+          if (classToAdd === "grid") {
+            // eslint-disable-next-line no-param-reassign
+            classToAdd = `grid${i}`;
+          }
+          individualGrid.classList.add(classToAdd);
+        });
+        i += 1;
+      });
+    } else if (player === "player2") {
+      gridsPlayer2.forEach((individualGrid) => {
+        // eslint-disable-next-line no-param-reassign
+        individualGrid.className = "";
+        individualGrid.removeAttribute("data-ship-number");
+        classesPlayer2.forEach((classToAdd) => {
+          if (classToAdd === "grid") {
+            // eslint-disable-next-line no-param-reassign
+            classToAdd = `grid${i}`;
+          }
+          individualGrid.classList.add(classToAdd);
+        });
+        i += 1;
+      });
+    }
+  };
+  return {
+    player1Plays,
+    selectWinnerBoard,
+    selectWinnerName,
+    resetButton,
+    cleanGrids,
+    get getReset() { return reset; },
+    set setReset(value) { reset = value; },
+  };
 })(document);
 
 const shipFactory = (coordinates, lengthShip) => {
@@ -94,6 +140,8 @@ const gameboardFactory = () => {
   const boardsize = 10;
   const numberOfShips = 10;
   const ships = [];
+  const defaultClassNamesPlayer1 = ["grid", "player-1-grid", "grid-unit"];
+  const defaultClassNamesPlayer2 = ["grid", "player-2-grid", "grid-unit"];
 
   function extractGridNumber(grid) {
     if (grid.classList[0].length === 5) {
@@ -190,8 +238,12 @@ const gameboardFactory = () => {
     return "no winner";
   };
 
+  const cleanBoard = (player) => {
+    DOM.cleanGrids(player, defaultClassNamesPlayer1, defaultClassNamesPlayer2);
+  };
+
   return {
-    generateShips, ships, receiveAttack, noShipsAvailable, numberOfShips,
+    generateShips, ships, receiveAttack, noShipsAvailable, numberOfShips, cleanBoard,
   };
 };
 
@@ -215,9 +267,12 @@ const playerFactory = () => {
 const gameFlow = (() => {
   let currentTurn = "player1";
   let winner = "no winner";
+  // eslint-disable-next-line prefer-const
 
   const gameboardPlayer1 = gameboardFactory();
   const gameboardPlayer2 = gameboardFactory();
+
+  DOM.resetButton();
 
   gameboardPlayer1.generateShips();
   gameboardPlayer2.generateShips();
@@ -308,6 +363,12 @@ const gameFlow = (() => {
   function gameLoop() {
     now = Date.now();
     const difference = now - then;
+    if (DOM.getReset === "reset") {
+      console.log("reset");
+      gameboardPlayer1.cleanBoard("player1");
+      gameboardPlayer2.cleanBoard("player2");
+      DOM.setReset = "no reset";
+    }
     if (winner !== "no winner") {
       const winnerGameboard = DOM.selectWinnerBoard(winner);
       const winnerName = DOM.selectWinnerName(winner);

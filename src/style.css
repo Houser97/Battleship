@@ -36,7 +36,8 @@ button:hover {
 }
 
 header {
-    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
     background-color: rgb(29, 25, 25);
     color: white;
     font-size: 10vh;
