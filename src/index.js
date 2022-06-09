@@ -1,13 +1,17 @@
 import "./style.css";
 
+let winner = "no winner";
+
 const DOM = ((doc) => {
-  const gameboard2 = doc.querySelector(".grid-player.player2");
-  const player1Plays = (gameboardPlayer2) => gameboard2.addEventListener("click", (e) => {
-    // eslint-disable-next-line no-use-before-define
-    if (gameFlow.currentTurn === "player1") {
-      gameboardPlayer2.receiveAttack(e, "player1", "player2");
+  const gridsPlayer2 = doc.querySelectorAll(".player-2-grid");
+  const player1Plays = (gameboardPlayer2) => gridsPlayer2.forEach((grid) => grid.addEventListener("click", (e) => {
+    if (winner === "no winner") {
+      // eslint-disable-next-line no-use-before-define
+      if (gameFlow.currentTurn === "player1") {
+        gameboardPlayer2.receiveAttack(e, "player1", "player2");
+      }
     }
-  });
+  }));
   return { player1Plays };
 })(document);
 
@@ -17,13 +21,16 @@ const shipFactory = (coordinates, lengthShip) => {
     let shipsHealth = health;
     if (shipCoordinates.includes(coordinate)) {
       shipsHealth -= 1;
-      return shipsHealth;
     }
     return shipsHealth;
   };
-  const isSunk = (health) => {
-    if (health === 0) return "sunk";
-    return "no sunk";
+  const isSunk = (health, numberOfShips) => {
+    let shipsAvailable = numberOfShips;
+    if (health === 0) {
+      shipsAvailable -= 1;
+      return ["sunk", shipsAvailable];
+    }
+    return ["no sunk", shipsAvailable];
   };
   return {
     hit,
@@ -154,8 +161,16 @@ const gameboardFactory = () => {
       );
     }
   };
+
+  const noShipsAvailable = (theWinner, remainingShips) => {
+    if (remainingShips === 0) {
+      return theWinner;
+    }
+    return "no winner";
+  };
+
   return {
-    generateShips, ships, receiveAttack,
+    generateShips, ships, receiveAttack, noShipsAvailable, numberOfShips,
   };
 };
 
@@ -166,13 +181,12 @@ const playerFactory = () => {
     const col = Math.floor(Math.random() * boardsize);
     return `${row}${col}`;
   }
-
+  /* Se coloca tablero 2 ya que el jugador sigue un proceso diferente al de la maquina */
   const attack = (playerAttacked, gameboardPlayer2) => {
     if (playerAttacked === "player2") {
       DOM.player1Plays(gameboardPlayer2);
     }
     return parseInt(computerChoice(), 10);
-    /* gameboardPlayer1.receiveAttack(computerAttacked); */
   };
   return { attack };
 };
@@ -180,6 +194,7 @@ const playerFactory = () => {
 const gameFlow = (() => {
   let currentTurn = "player1";
   let shipHit = 0;
+
   const gameboardPlayer1 = gameboardFactory();
   const gameboardPlayer2 = gameboardFactory();
 
@@ -212,11 +227,17 @@ const gameFlow = (() => {
             attackCoordinates,
             shipHit.currentHealth,
           );
+          let sunkOrNotSunk;
+          [sunkOrNotSunk, gameboardPlayer2.numberOfShips] = shipHit.isSunk(
+            shipHit.currentHealth,
+            gameboardPlayer2.numberOfShips,
+          );
 
-          if (shipHit.isSunk(shipHit.currentHealth) === "sunk") {
+          if (sunkOrNotSunk === "sunk") {
             shipHit.coordinates.forEach((shipSunk) => {
               const gridAttacked = document.querySelector(`.player2 .grid${shipSunk}`);
               gridAttacked.classList.add("sunk");
+              winner = gameboardPlayer2.noShipsAvailable("player1", gameboardPlayer2.numberOfShips);
             });
           }
         } else if (currentTurn === "player2") {
@@ -228,11 +249,16 @@ const gameFlow = (() => {
             attackCoordinates,
             shipHit.currentHealth,
           );
-
-          if (shipHit.isSunk(shipHit.currentHealth) === "sunk") {
+          let sunkOrNotSunk;
+          [sunkOrNotSunk, gameboardPlayer1.numberOfShips] = shipHit.isSunk(
+            shipHit.currentHealth,
+            gameboardPlayer1.numberOfShips,
+          );
+          if (sunkOrNotSunk === "sunk") {
             shipHit.coordinates.forEach((shipSunk) => {
               const gridAttacked = document.querySelector(`.player1 .grid${shipSunk}`);
               gridAttacked.classList.add("sunk");
+              winner = gameboardPlayer1.noShipsAvailable("player2", gameboardPlayer1.numberOfShips);
             });
           }
         }
@@ -247,17 +273,19 @@ const gameFlow = (() => {
   function gameLoop() {
     now = Date.now();
     const difference = now - then;
-    if (difference > 1000 / 60) {
-      if (currentTurn === "player2") {
-        const computerChoice = player2.attack("player1");
-        gameboardPlayer1.receiveAttack(computerChoice, "player2", "player1");
+    if (winner === "no winner") {
+      if (difference > 1000 / 60) {
+        if (currentTurn === "player2") {
+          const computerChoice = player2.attack("player1");
+          gameboardPlayer1.receiveAttack(computerChoice, "player2", "player1");
+        }
+        then = now;
       }
-      then = now;
+      window.requestAnimationFrame(gameLoop);
     }
-    window.requestAnimationFrame(gameLoop);
   }
 
   gameLoop();
 
-  return { currentTurn, setNextTurn };
+  return { currentTurn, setNextTurn, winner };
 })();
