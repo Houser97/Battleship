@@ -65,7 +65,15 @@ const view = ((doc) => {
       grid.classList.add("hit");
     }
   };
-  return { showShips, displayMiss, displayHit };
+
+  const showWinner = (winner, gameboard) => {
+    if (winner === "player1") {
+      console.log(winner + gameboard);
+    }
+  };
+  return {
+    showShips, displayMiss, displayHit, showWinner,
+  };
 })(document);
 
 const gameboardFactory = () => {

@@ -20,11 +20,23 @@ header {
     background-color: rgb(29, 25, 25);
     color: white;
     font-size: 10vh;
-    min-height: 12vh;
-    max-height: 12vh;
+    min-height: 18vh;
+    max-height: 18vh;
     font-weight: 600;
     display: flex;
     justify-content: center; align-items: center;
+}
+
+.player-number {
+    display: flex;
+    flex-flow: column;
+    justify-content: center; align-items: center;
+}
+
+.player {
+    align-self: center; justify-self: center;
+    font-size: 40px;
+    font-weight: 600;
 }
 
 .gameboard {
@@ -43,7 +55,7 @@ header {
     min-width: 450px;
     grid-template-columns: repeat(11,1fr);
     grid-template-rows: repeat(11,1fr);
-    margin: 10%;
+    margin: 3%;
 }
 
 .grid-player {
