@@ -2,6 +2,10 @@ import "./style.css";
 
 const DOM = ((doc) => {
   let reset = "no reset";
+  const gameboard1 = doc.querySelector(".grid-player.player1");
+  const gameboard2 = doc.querySelector(".grid-player.player2");
+  const player1Div = doc.querySelector(".player.player1");
+  const player2Div = doc.querySelector(".player.player2");
   const gridsPlayer1 = doc.querySelectorAll(".player-1-grid");
   const gridsPlayer2 = doc.querySelectorAll(".player-2-grid");
   const player1Plays = (gameboardPlayer2) => gridsPlayer2.forEach((grid) => grid.addEventListener("click", (e) => {
@@ -67,6 +71,10 @@ const DOM = ((doc) => {
     selectWinnerName,
     resetButton,
     cleanGrids,
+    gameboard1,
+    gameboard2,
+    player1Div,
+    player2Div,
     get getReset() { return reset; },
     set setReset(value) { reset = value; },
   };
@@ -94,6 +102,7 @@ const shipFactory = (coordinates, lengthShip) => {
     isSunk,
     currentHealth,
     coordinates,
+    get currentCoordinates() { return coordinates; },
   };
 };
 
@@ -131,15 +140,28 @@ const view = ((doc) => {
     playerDiv.textContent = `${playerDivText} wins!`;
     playerDiv.classList.add("winnerText");
   };
+
+  const removeWinner = (winner, gameboard, playerDiv) => {
+    gameboard.classList.remove("winnerBoard");
+    playerDiv.classList.remove("winnerText");
+    // eslint-disable-next-line no-param-reassign
+    if (winner === "player1") {
+      // eslint-disable-next-line no-param-reassign
+      playerDiv.textContent = "Player 1";
+    } else if (winner === "player2") {
+      // eslint-disable-next-line no-param-reassign
+      playerDiv.textContent = "Player 2";
+    }
+  };
   return {
-    showShips, displayMiss, displayHit, showWinner,
+    showShips, displayMiss, displayHit, showWinner, removeWinner,
   };
 })(document);
 
 const gameboardFactory = () => {
   const boardsize = 10;
   const numberOfShips = 10;
-  const ships = [];
+  let ships = [];
   const defaultClassNamesPlayer1 = ["grid", "player-1-grid", "grid-unit"];
   const defaultClassNamesPlayer2 = ["grid", "player-2-grid", "grid-unit"];
 
@@ -242,8 +264,20 @@ const gameboardFactory = () => {
     DOM.cleanGrids(player, defaultClassNamesPlayer1, defaultClassNamesPlayer2);
   };
 
+  const cleanShipList = () => {
+    ships = [];
+  };
+
   return {
-    generateShips, ships, receiveAttack, noShipsAvailable, numberOfShips, cleanBoard,
+    generateShips,
+    ships,
+    receiveAttack,
+    noShipsAvailable,
+    numberOfShips,
+    cleanBoard,
+    cleanShipList,
+    get currentShips() { return ships; },
+    set newShips(value) { ships = value; },
   };
 };
 
@@ -267,6 +301,7 @@ const playerFactory = () => {
 const gameFlow = (() => {
   let currentTurn = "player1";
   let winner = "no winner";
+  let i = 0;
   // eslint-disable-next-line prefer-const
 
   const gameboardPlayer1 = gameboardFactory();
@@ -283,6 +318,31 @@ const gameFlow = (() => {
   const player1 = playerFactory();
   const player2 = playerFactory();
   player1.attack("player2", gameboardPlayer2);
+
+  function newGame() {
+    console.log("reset");
+    gameboardPlayer1.cleanBoard("player1");
+    gameboardPlayer2.cleanBoard("player2");
+    gameboardPlayer1.cleanShipList();
+    gameboardPlayer2.cleanShipList();
+    gameboardPlayer1.generateShips();
+    gameboardPlayer2.generateShips();
+    gameboardPlayer1.newShips = gameboardPlayer1.currentShips;
+    gameboardPlayer2.newShips = gameboardPlayer2.currentShips;
+    gameboardPlayer1.numberOfShips = 10;
+    gameboardPlayer2.numberOfShips = 10;
+
+    view.showShips("player1", 10, gameboardPlayer1.currentShips);
+    view.showShips("player2", 10, gameboardPlayer2.currentShips);
+
+    view.removeWinner("player1", DOM.gameboard1, DOM.player1Div);
+    view.removeWinner("player2", DOM.gameboard2, DOM.player2Div);
+
+    currentTurn = "player1";
+    winner = "no winner";
+    i = 0;
+    DOM.setReset = "no reset";
+  }
 
   function checkIfShipSunk(sunkOrNotSunk, ship, playerAttacked, playerAttacking) {
     if (sunkOrNotSunk === "sunk") {
@@ -308,7 +368,7 @@ const gameFlow = (() => {
     if (grid.className.includes("hit")) {
       let shipHit;
       if (currentTurn === "player1") {
-        shipHit = gameboardPlayer2.ships[shipAttacked];
+        shipHit = gameboardPlayer2.currentShips[shipAttacked];
         const attackCoordinates = parseInt(attackedCoordinates, 10);
 
         shipHit.currentHealth = shipHit.hit(
@@ -325,7 +385,7 @@ const gameFlow = (() => {
 
         checkIfShipSunk(sunkOrNotSunk, shipHit, "player2", "player1");
       } else if (currentTurn === "player2") {
-        shipHit = gameboardPlayer1.ships[shipAttacked];
+        shipHit = gameboardPlayer1.currentShips[shipAttacked];
         const attackCoordinates = parseInt(attackedCoordinates, 10);
 
         shipHit.currentHealth = shipHit.hit(
@@ -357,6 +417,13 @@ const gameFlow = (() => {
     }
   };
 
+  function newGameLoop() {
+    if (DOM.getReset === "reset") {
+      newGame();
+    }
+    window.requestAnimationFrame(newGameLoop);
+  }
+
   let then = Date.now();
   let now;
 
@@ -364,26 +431,25 @@ const gameFlow = (() => {
     now = Date.now();
     const difference = now - then;
     if (DOM.getReset === "reset") {
-      console.log("reset");
-      gameboardPlayer1.cleanBoard("player1");
-      gameboardPlayer2.cleanBoard("player2");
-      DOM.setReset = "no reset";
+      newGame();
     }
     if (winner !== "no winner") {
-      const winnerGameboard = DOM.selectWinnerBoard(winner);
-      const winnerName = DOM.selectWinnerName(winner);
-      view.showWinner(winner, winnerGameboard, winnerName);
-    }
-    if (winner === "no winner") {
-      if (difference > 1000 / 60) {
-        if (currentTurn === "player2") {
-          const computerChoice = player2.attack("player1");
-          gameboardPlayer1.receiveAttack(computerChoice, "player2", "player1");
-        }
-        then = now;
+      if (i === 0) {
+        i += 1;
+        const winnerGameboard = DOM.selectWinnerBoard(winner);
+        const winnerName = DOM.selectWinnerName(winner);
+        view.showWinner(winner, winnerGameboard, winnerName);
       }
-      window.requestAnimationFrame(gameLoop);
+      newGameLoop();
     }
+    if (difference > 1000 / 60) {
+      if (currentTurn === "player2") {
+        const computerChoice = player2.attack("player1");
+        gameboardPlayer1.receiveAttack(computerChoice, "player2", "player1");
+      }
+      then = now;
+    }
+    window.requestAnimationFrame(gameLoop);
   }
 
   gameLoop();
