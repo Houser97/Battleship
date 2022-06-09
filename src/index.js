@@ -11,7 +11,19 @@ const DOM = ((doc) => {
       }
     }
   }));
-  return { player1Plays };
+  const selectWinnerBoard = (winner) => {
+    if (winner !== "no winner") {
+      return doc.querySelector(`.grid-player.${winner}`);
+    }
+    return winner;
+  };
+  const selectWinnerName = (winner) => {
+    if (winner !== "no winner") {
+      return doc.querySelector(`.player.${winner}`);
+    }
+    return winner;
+  };
+  return { player1Plays, selectWinnerBoard, selectWinnerName };
 })(document);
 
 const shipFactory = (coordinates, lengthShip) => {
@@ -66,10 +78,12 @@ const view = ((doc) => {
     }
   };
 
-  const showWinner = (winner, gameboard) => {
-    if (winner === "player1") {
-      console.log(winner + gameboard);
-    }
+  const showWinner = (winner, gameboard, playerDiv) => {
+    gameboard.classList.add("winnerBoard");
+    const playerDivText = playerDiv.textContent;
+    // eslint-disable-next-line no-param-reassign
+    playerDiv.textContent = `${playerDivText} wins!`;
+    playerDiv.classList.add("winnerText");
   };
   return {
     showShips, displayMiss, displayHit, showWinner,
@@ -294,6 +308,11 @@ const gameFlow = (() => {
   function gameLoop() {
     now = Date.now();
     const difference = now - then;
+    if (winner !== "no winner") {
+      const winnerGameboard = DOM.selectWinnerBoard(winner);
+      const winnerName = DOM.selectWinnerName(winner);
+      view.showWinner(winner, winnerGameboard, winnerName);
+    }
     if (winner === "no winner") {
       if (difference > 1000 / 60) {
         if (currentTurn === "player2") {

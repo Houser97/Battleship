@@ -103,3 +103,14 @@ header {
 .sunk {
     background-color: black;
 }
+
+/*-------------------------------------------------------Winner*/
+/*-----------------------------------------------------------*/
+
+.winnerBoard {
+    border: 5px solid gold;
+}
+
+.winnerText {
+    color: goldenrod;
+}
