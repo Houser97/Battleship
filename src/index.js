@@ -1,13 +1,12 @@
 import "./style.css";
 
-let winner = "no winner";
-
 const DOM = ((doc) => {
   const gridsPlayer2 = doc.querySelectorAll(".player-2-grid");
   const player1Plays = (gameboardPlayer2) => gridsPlayer2.forEach((grid) => grid.addEventListener("click", (e) => {
-    if (winner === "no winner") {
+    // eslint-disable-next-line no-use-before-define
+    if (gameFlow.theWinner === "no winner") {
       // eslint-disable-next-line no-use-before-define
-      if (gameFlow.currentTurn === "player1") {
+      if (gameFlow.turn === "player1") {
         gameboardPlayer2.receiveAttack(e, "player1", "player2");
       }
     }
@@ -193,7 +192,7 @@ const playerFactory = () => {
 
 const gameFlow = (() => {
   let currentTurn = "player1";
-  let shipHit = 0;
+  let winner = "no winner";
 
   const gameboardPlayer1 = gameboardFactory();
   const gameboardPlayer2 = gameboardFactory();
@@ -208,62 +207,76 @@ const gameFlow = (() => {
   const player2 = playerFactory();
   player1.attack("player2", gameboardPlayer2);
 
+  function checkIfShipSunk(sunkOrNotSunk, ship, playerAttacked, playerAttacking) {
+    if (sunkOrNotSunk === "sunk") {
+      ship.coordinates.forEach((shipSunk) => {
+        const gridAttacked = document.querySelector(`.${playerAttacked} .grid${shipSunk}`);
+        gridAttacked.classList.add("sunk");
+        if (playerAttacking === "player1") {
+          winner = gameboardPlayer2.noShipsAvailable(
+            playerAttacking,
+            gameboardPlayer2.numberOfShips,
+          );
+        } else {
+          winner = gameboardPlayer1.noShipsAvailable(
+            playerAttacking,
+            gameboardPlayer1.numberOfShips,
+          );
+        }
+      });
+    }
+  }
+
+  function callHitMethod(grid, currentPlayer, nextPlayer, attackedCoordinates, shipAttacked) {
+    if (grid.className.includes("hit")) {
+      let shipHit;
+      if (currentTurn === "player1") {
+        shipHit = gameboardPlayer2.ships[shipAttacked];
+        const attackCoordinates = parseInt(attackedCoordinates, 10);
+
+        shipHit.currentHealth = shipHit.hit(
+          shipHit.coordinates,
+          attackCoordinates,
+          shipHit.currentHealth,
+        );
+
+        let sunkOrNotSunk;
+        [sunkOrNotSunk, gameboardPlayer2.numberOfShips] = shipHit.isSunk(
+          shipHit.currentHealth,
+          gameboardPlayer2.numberOfShips,
+        );
+
+        checkIfShipSunk(sunkOrNotSunk, shipHit, "player2", "player1");
+      } else if (currentTurn === "player2") {
+        shipHit = gameboardPlayer1.ships[shipAttacked];
+        const attackCoordinates = parseInt(attackedCoordinates, 10);
+
+        shipHit.currentHealth = shipHit.hit(
+          shipHit.coordinates,
+          attackCoordinates,
+          shipHit.currentHealth,
+        );
+        let sunkOrNotSunk;
+        [sunkOrNotSunk, gameboardPlayer1.numberOfShips] = shipHit.isSunk(
+          shipHit.currentHealth,
+          gameboardPlayer1.numberOfShips,
+        );
+        checkIfShipSunk(sunkOrNotSunk, shipHit, "player1", "player2");
+      }
+      currentTurn = currentPlayer;
+    } else { currentTurn = nextPlayer; }
+  }
+
   const setNextTurn = (grid, currentPlayer, nextPlayer, attackedCoordinates, shipAttacked) => {
     if (grid.className.includes("empty") || grid.className.includes("hit")) {
       currentTurn = currentPlayer;
-    } else if (!(grid.className.includes("empty")) && !(grid.className.includes("hit"))) {
+    } if (!(grid.className.includes("empty")) && !(grid.className.includes("hit"))) {
       // eslint-disable-next-line no-use-before-define
       view.displayMiss(grid);
       // eslint-disable-next-line no-use-before-define
       view.displayHit(grid);
       /* Llamar a hit e isSunk del respectivo barco */
-      if (grid.className.includes("hit")) {
-        if (currentTurn === "player1") {
-          shipHit = gameboardPlayer2.ships[shipAttacked];
-          const attackCoordinates = parseInt(attackedCoordinates, 10);
-
-          shipHit.currentHealth = shipHit.hit(
-            shipHit.coordinates,
-            attackCoordinates,
-            shipHit.currentHealth,
-          );
-          let sunkOrNotSunk;
-          [sunkOrNotSunk, gameboardPlayer2.numberOfShips] = shipHit.isSunk(
-            shipHit.currentHealth,
-            gameboardPlayer2.numberOfShips,
-          );
-
-          if (sunkOrNotSunk === "sunk") {
-            shipHit.coordinates.forEach((shipSunk) => {
-              const gridAttacked = document.querySelector(`.player2 .grid${shipSunk}`);
-              gridAttacked.classList.add("sunk");
-              winner = gameboardPlayer2.noShipsAvailable("player1", gameboardPlayer2.numberOfShips);
-            });
-          }
-        } else if (currentTurn === "player2") {
-          shipHit = gameboardPlayer1.ships[shipAttacked];
-          const attackCoordinates = parseInt(attackedCoordinates, 10);
-
-          shipHit.currentHealth = shipHit.hit(
-            shipHit.coordinates,
-            attackCoordinates,
-            shipHit.currentHealth,
-          );
-          let sunkOrNotSunk;
-          [sunkOrNotSunk, gameboardPlayer1.numberOfShips] = shipHit.isSunk(
-            shipHit.currentHealth,
-            gameboardPlayer1.numberOfShips,
-          );
-          if (sunkOrNotSunk === "sunk") {
-            shipHit.coordinates.forEach((shipSunk) => {
-              const gridAttacked = document.querySelector(`.player1 .grid${shipSunk}`);
-              gridAttacked.classList.add("sunk");
-              winner = gameboardPlayer1.noShipsAvailable("player2", gameboardPlayer1.numberOfShips);
-            });
-          }
-        }
-        currentTurn = currentPlayer;
-      } else { currentTurn = nextPlayer; }
+      callHitMethod(grid, currentPlayer, nextPlayer, attackedCoordinates, shipAttacked);
     }
   };
 
@@ -287,5 +300,11 @@ const gameFlow = (() => {
 
   gameLoop();
 
-  return { currentTurn, setNextTurn, winner };
+  return {
+    currentTurn,
+    setNextTurn,
+    winner,
+    get turn() { return currentTurn; },
+    get theWinner() { return winner; },
+  };
 })();
