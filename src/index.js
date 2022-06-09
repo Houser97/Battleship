@@ -113,7 +113,7 @@ const view = ((doc) => {
       const currentGrids = [];
       currentCoordinates.forEach((grid) => {
         const className = doc.querySelector(`.${player} .grid${grid}`);
-        className.classList.add("ship");
+        /* className.classList.add("ship"); */
         className.dataset.shipNumber = `${i}`;
         currentGrids.push(className);
       });
