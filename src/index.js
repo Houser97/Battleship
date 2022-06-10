@@ -150,7 +150,7 @@ const view = ((doc) => {
       playerDiv.textContent = "Player 1";
     } else if (winner === "player2") {
       // eslint-disable-next-line no-param-reassign
-      playerDiv.textContent = "Player 2";
+      playerDiv.textContent = "Computer";
     }
   };
   return {
